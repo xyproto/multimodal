@@ -39,5 +39,5 @@ func main() {
 
 ## General info
 
-* Version: 1.0.0
+* Version: 1.0.1
 * License: Apache2
