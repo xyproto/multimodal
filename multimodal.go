@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"mime"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,7 +65,7 @@ func (mm *MultiModal) MustAddImage(filename string) {
 	}
 }
 
-// AddURI takes an URI and adds a genai.Part (a genai.FileData).
+// AddURI takes an Google Cloud URI and adds a genai.Part (a genai.FileData).
 // Example URI: "gs://generativeai-downloads/images/scones.jpg"
 func (mm *MultiModal) AddURI(URI string) {
 	mm.parts = append(mm.parts, genai.FileData{
@@ -72,14 +74,34 @@ func (mm *MultiModal) AddURI(URI string) {
 	})
 }
 
-// AddURIWithMIME takes an URI and adds a genai.Part (a genai.FileData).
-// Also takes a MIME type.
-// Example URI: "gs://generativeai-downloads/images/scones.jpg"
-func (mm *MultiModal) AddURIWithMIME(URI, MIME string) {
-	mm.parts = append(mm.parts, genai.FileData{
-		MIMEType: MIME,
-		FileURI:  URI,
-	})
+// AddURL downloads the file from the given URL, identifies the MIME type,
+// and adds it as a genai.Part.
+func (mm *MultiModal) AddURL(URL string) error {
+	resp, err := http.Get(URL)
+	if err != nil {
+		return fmt.Errorf("failed to download the file from URL: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read the response body: %v", err)
+	}
+	mimeType := resp.Header.Get("Content-Type")
+	if mimeType == "" {
+		return fmt.Errorf("could see a Content-Type header for the given URL: %s", URL)
+	}
+	if mm.verbose {
+		fmt.Printf("Downloaded %d bytes with MIME type %s from %s.\n", len(data), mimeType, URL)
+	}
+	fileData := genai.Blob{
+		MIMEType: mimeType,
+		Data:     data,
+	}
+	mm.parts = append(mm.parts, fileData)
+	return nil
 }
 
 func (mm *MultiModal) AddText(prompt string) {
