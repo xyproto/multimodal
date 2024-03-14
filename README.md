@@ -15,16 +15,16 @@ import (
 )
 
 func main() {
-    // Use the location and project ID for your multimodal Vertex AI model in Google Cloud here
-    const location = "us-central1"
-    const projectID = "123412341234"
-
     mm := multimodal.New("gemini-1.0-pro-vision", 0.4)
 
     // Build a prompt
     mm.AddImage("frog.png")
     mm.AddURI("gs://generativeai-downloads/images/scones.jpg")
     mm.AddText("describe what is common for these two images")
+
+    // Use your location and project ID for a multimodal Vertex AI model in Google Cloud
+    const location = "us-central1"
+    const projectID = "123412341234"
 
     // Submit the prompt and get a reponse
     response, err := mm.Submit(projectID, location)
