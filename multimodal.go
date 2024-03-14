@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"mime"
 	"os"
 	"path/filepath"
@@ -34,23 +35,32 @@ func (mm *MultiModal) SetTrim(trim bool) {
 }
 
 func (mm *MultiModal) AddImage(filename string) error {
-	image_bytes, err := os.ReadFile(filename)
+	imageBytes, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 	if mm.verbose {
-		fmt.Printf("Read %d bytes from %s.\n", len(image_bytes), filename)
+		fmt.Printf("Read %d bytes from %s.\n", len(imageBytes), filename)
 	}
 	ext := strings.TrimPrefix(filepath.Ext(filename), ".")
+	if ext == "jpg" {
+		ext = "jpeg"
+	}
 	if mm.verbose {
 		fmt.Printf("Using ext type: %s\n", ext)
 	}
-	img := genai.ImageData(ext, image_bytes)
+	img := genai.ImageData(ext, imageBytes)
 	if mm.verbose {
 		fmt.Printf("Prepared an image blob: %T\n", img)
 	}
 	mm.parts = append(mm.parts, img)
 	return nil
+}
+
+func (mm *MultiModal) MustAddImage(filename string) {
+	if err := mm.AddImage(filename); err != nil {
+		log.Fatalln(err)
+	}
 }
 
 // AddURI takes an URI and adds a genai.Part (a genai.FileData).
