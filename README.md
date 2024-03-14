@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+    // Select the model and temperature
     mm := multimodal.New("gemini-1.0-pro-vision", 0.4)
 
     // Build a prompt
