@@ -14,7 +14,10 @@ func main() {
 
 	// Build a prompt
 
-	mm.AddImage("frog.png")
+	err := mm.AddImage("frog.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
 	mm.AddURI("gs://generativeai-downloads/images/scones.jpg")
 	mm.AddText("describe what is common for these two images")
 
