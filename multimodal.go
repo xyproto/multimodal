@@ -72,6 +72,16 @@ func (mm *MultiModal) AddURI(URI string) {
 	})
 }
 
+// AddURIWithMIME takes an URI and adds a genai.Part (a genai.FileData).
+// Also takes a MIME type.
+// Example URI: "gs://generativeai-downloads/images/scones.jpg"
+func (mm *MultiModal) AddURIWithMIME(URI, MIME string) {
+	mm.parts = append(mm.parts, genai.FileData{
+		MIMEType: MIME,
+		FileURI:  URI,
+	})
+}
+
 func (mm *MultiModal) AddText(prompt string) {
 	mm.parts = append(mm.parts, genai.Text(prompt))
 }
