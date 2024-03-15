@@ -1,3 +1,4 @@
+// Package multimodal abstracts the genai multimodal prompt building
 package multimodal
 
 import (
@@ -15,6 +16,7 @@ import (
 	"cloud.google.com/go/vertexai/genai"
 )
 
+// MultiModal represents multimodal prompt parts + configuration
 type MultiModal struct {
 	modelName   string
 	temperature float32
@@ -23,19 +25,28 @@ type MultiModal struct {
 	verbose     bool
 }
 
+// New creates a new MultiModal instance with a specified model name and temperature,
+// initializing it with default values for parts, trim, and verbose settings.
 func New(modelName string, temperature float32) *MultiModal {
 	parts := make([]genai.Part, 0)
 	return &MultiModal{modelName, 0.4, parts, true, false}
 }
 
+// SetVerbose updates the verbose logging flag of the MultiModal instance,
+// allowing for more detailed output during operations.
 func (mm *MultiModal) SetVerbose(verbose bool) {
 	mm.verbose = verbose
 }
 
+// SetTrim updates the trim flag of the MultiModal instance,
+// controlling whether the output is trimmed for whitespace.
 func (mm *MultiModal) SetTrim(trim bool) {
 	mm.trim = trim
 }
 
+// AddImage reads an image from a file, prepares it for processing,
+// and adds it to the list of parts to be used by the model.
+// It supports verbose logging of operations if enabled.
 func (mm *MultiModal) AddImage(filename string) error {
 	imageBytes, err := os.ReadFile(filename)
 	if err != nil {
@@ -59,13 +70,16 @@ func (mm *MultiModal) AddImage(filename string) error {
 	return nil
 }
 
+// MustAddImage is a convenience function that adds an image to the MultiModal instance,
+// terminating the program if adding the image fails.
 func (mm *MultiModal) MustAddImage(filename string) {
 	if err := mm.AddImage(filename); err != nil {
 		log.Fatalln(err)
 	}
 }
 
-// AddURI takes an Google Cloud URI and adds a genai.Part (a genai.FileData).
+// AddURI adds a file part to the MultiModal instance from a Google Cloud URI,
+// allowing for integration with cloud resources directly.
 // Example URI: "gs://generativeai-downloads/images/scones.jpg"
 func (mm *MultiModal) AddURI(URI string) {
 	mm.parts = append(mm.parts, genai.FileData{
@@ -104,10 +118,22 @@ func (mm *MultiModal) AddURL(URL string) error {
 	return nil
 }
 
+// AddData adds arbitrary data with a specified MIME type to the parts of the MultiModal instance.
+func (mm *MultiModal) AddData(mimeType string, data []byte) {
+	fileData := genai.Blob{
+		MIMEType: mimeType,
+		Data:     data,
+	}
+	mm.parts = append(mm.parts, fileData)
+}
+
+// AddText adds a textual part to the MultiModal instance.
 func (mm *MultiModal) AddText(prompt string) {
 	mm.parts = append(mm.parts, genai.Text(prompt))
 }
 
+// Submit sends all added parts to the specified Vertex AI model for processing,
+// returning the model's response. It supports temperature configuration and response trimming.
 func (mm *MultiModal) Submit(projectID, location string) (string, error) {
 	ctx := context.Background()
 	// First create a client
