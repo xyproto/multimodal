@@ -132,17 +132,10 @@ func (mm *MultiModal) AddText(prompt string) {
 	mm.parts = append(mm.parts, genai.Text(prompt))
 }
 
-// Submit sends all added parts to the specified Vertex AI model for processing,
+// SubmitToClient sends all added parts to the specified Vertex AI model for processing,
 // returning the model's response. It supports temperature configuration and response trimming.
-func (mm *MultiModal) Submit(projectID, location string) (string, error) {
-	ctx := context.Background()
-	// First create a client
-	client, err := genai.NewClient(ctx, projectID, location)
-	if err != nil {
-		return "", fmt.Errorf("unable to create client: %v", err)
-	}
-	defer client.Close()
-	// Then configure the model
+func (mm *MultiModal) SubmitToClient(ctx context.Context, client *genai.Client) (string, error) {
+	// Configure the model
 	model := client.GenerativeModel(mm.modelName)
 	model.SetTemperature(mm.temperature)
 	// Then pass in the parts and generate a response
@@ -160,4 +153,18 @@ func (mm *MultiModal) Submit(projectID, location string) (string, error) {
 		return strings.TrimSpace(result), nil
 	}
 	return result, nil
+}
+
+// Submit sends all added parts to the specified Vertex AI model for processing,
+// returning the model's response. It supports temperature configuration and response trimming.
+// This function creates a temporary client, and is not meant to be used within Google Cloud (use SubmitToClient instead).
+func (mm *MultiModal) Submit(projectID, location string) (string, error) {
+	ctx := context.Background()
+	// First create a client
+	client, err := genai.NewClient(ctx, projectID, location)
+	if err != nil {
+		return "", fmt.Errorf("unable to create client: %v", err)
+	}
+	defer client.Close()
+	return mm.SubmitToClient(ctx, client)
 }
