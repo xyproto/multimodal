@@ -144,7 +144,7 @@ func (mm *MultiModal) SubmitToClient(ctx context.Context, client *genai.Client) 
 		return "", fmt.Errorf("unable to generate contents: %v", err)
 	}
 	// Then examine the reponse
-	if len(res.Candidates) == 0 || len(res.Candidates[0].Content.Parts) == 0 {
+	if len(res.Candidates) == 0 || (len(res.Candidates) > 0 && len(res.Candidates[0].Content.Parts) == 0) {
 		return "", errors.New("empty response from model")
 	}
 	// And return the result as a string
