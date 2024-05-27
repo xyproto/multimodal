@@ -118,14 +118,28 @@ func (mm *MultiModal) AddURL(URL string) error {
 	return nil
 }
 
-// CountTokens will count the tokens in the given text string
-func (mm *MultiModal) CountTokens(ctx context.Context, client *genai.Client, text string) (int, error) {
+// CountTextTokensWithClient will count the tokens in the given text
+func (mm *MultiModal) CountTextTokensWithClient(ctx context.Context, client *genai.Client, text string) (int, error) {
 	model := client.GenerativeModel(mm.modelName)
 	resp, err := model.CountTokens(ctx, genai.Text(text))
 	if err != nil {
 		return 0, err
 	}
 	return int(resp.TotalTokens), nil
+}
+
+// CountTokensWithClient will count the tokens in the current multimodal prompt
+func (mm *MultiModal) CountTokensWithClient(ctx context.Context, client *genai.Client) (int, error) {
+	model := client.GenerativeModel(mm.modelName)
+	var sum int
+	for _, part := range mm.parts {
+		resp, err := model.CountTokens(ctx, part)
+		if err != nil {
+			return sum, err
+		}
+		sum += int(resp.TotalTokens)
+	}
+	return sum, nil
 }
 
 // AddData adds arbitrary data with a specified MIME type to the parts of the MultiModal instance.
@@ -175,6 +189,27 @@ func (mm *MultiModal) Submit(projectID, location string) (string, error) {
 		return "", fmt.Errorf("unable to create client: %v", err)
 	}
 	defer client.Close()
-
 	return mm.SubmitToClient(ctx, client)
+}
+
+// CountTokens creates a new client and then counts the tokens in the current multimodal prompt.
+func (mm *MultiModal) CountTokens(projectID, location string) (int, error) {
+	ctx := context.Background()
+	client, err := genai.NewClient(ctx, projectID, location)
+	if err != nil {
+		return 0, fmt.Errorf("unable to create client: %v", err)
+	}
+	defer client.Close()
+	return mm.CountTokensWithClient(ctx, client)
+}
+
+// CountTextTokens creates a new client and then counts the tokens in the given text.
+func (mm *MultiModal) CountTextTokens(projectID, location, text string) (int, error) {
+	ctx := context.Background()
+	client, err := genai.NewClient(ctx, projectID, location)
+	if err != nil {
+		return 0, fmt.Errorf("unable to create client: %v", err)
+	}
+	defer client.Close()
+	return mm.CountTextTokensWithClient(ctx, client, text)
 }
