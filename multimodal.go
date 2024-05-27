@@ -118,6 +118,16 @@ func (mm *MultiModal) AddURL(URL string) error {
 	return nil
 }
 
+// CountTokens will count the tokens in the given text string
+func (mm *MultiModal) CountTokens(ctx context.Context, client *genai.Client, text string) (int, error) {
+	model := client.GenerativeModel(mm.modelName)
+	resp, err := model.CountTokens(ctx, genai.Text(text))
+	if err != nil {
+		return 0, err
+	}
+	return int(resp.TotalTokens), nil
+}
+
 // AddData adds arbitrary data with a specified MIME type to the parts of the MultiModal instance.
 func (mm *MultiModal) AddData(mimeType string, data []byte) {
 	fileData := genai.Blob{
@@ -157,14 +167,14 @@ func (mm *MultiModal) SubmitToClient(ctx context.Context, client *genai.Client) 
 
 // Submit sends all added parts to the specified Vertex AI model for processing,
 // returning the model's response. It supports temperature configuration and response trimming.
-// This function creates a temporary client, and is not meant to be used within Google Cloud (use SubmitToClient instead).
+// This function creates a temporary client and is not meant to be used within Google Cloud (use SubmitToClient instead).
 func (mm *MultiModal) Submit(projectID, location string) (string, error) {
 	ctx := context.Background()
-	// First create a client
 	client, err := genai.NewClient(ctx, projectID, location)
 	if err != nil {
 		return "", fmt.Errorf("unable to create client: %v", err)
 	}
 	defer client.Close()
+
 	return mm.SubmitToClient(ctx, client)
 }
