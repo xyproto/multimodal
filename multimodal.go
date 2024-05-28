@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/vertexai/genai"
 )
@@ -23,13 +24,18 @@ type MultiModal struct {
 	parts       []genai.Part
 	trim        bool
 	verbose     bool
+	timeout     time.Duration
 }
 
 // New creates a new MultiModal instance with a specified model name and temperature,
 // initializing it with default values for parts, trim, and verbose settings.
 func New(modelName string, temperature float32) *MultiModal {
 	parts := make([]genai.Part, 0)
-	return &MultiModal{modelName, 0.4, parts, true, false}
+	return &MultiModal{modelName, 0.4, parts, true, false, 2 * time.Minute}
+}
+
+func (mm *MultiModal) SetTimeout(timeout time.Duration) {
+	mm.timeout = timeout
 }
 
 // SetVerbose updates the verbose logging flag of the MultiModal instance,
@@ -183,7 +189,8 @@ func (mm *MultiModal) SubmitToClient(ctx context.Context, client *genai.Client) 
 // returning the model's response. It supports temperature configuration and response trimming.
 // This function creates a temporary client and is not meant to be used within Google Cloud (use SubmitToClient instead).
 func (mm *MultiModal) Submit(projectID, location string) (string, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), mm.timeout)
+	defer cancel()
 	client, err := genai.NewClient(ctx, projectID, location)
 	if err != nil {
 		return "", fmt.Errorf("unable to create client: %v", err)
@@ -194,7 +201,8 @@ func (mm *MultiModal) Submit(projectID, location string) (string, error) {
 
 // CountTokens creates a new client and then counts the tokens in the current multimodal prompt.
 func (mm *MultiModal) CountTokens(projectID, location string) (int, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), mm.timeout)
+	defer cancel()
 	client, err := genai.NewClient(ctx, projectID, location)
 	if err != nil {
 		return 0, fmt.Errorf("unable to create client: %v", err)
@@ -205,7 +213,8 @@ func (mm *MultiModal) CountTokens(projectID, location string) (int, error) {
 
 // CountTextTokens creates a new client and then counts the tokens in the given text.
 func (mm *MultiModal) CountTextTokens(projectID, location, text string) (int, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), mm.timeout)
+	defer cancel()
 	client, err := genai.NewClient(ctx, projectID, location)
 	if err != nil {
 		return 0, fmt.Errorf("unable to create client: %v", err)
