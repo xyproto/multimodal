@@ -2,6 +2,10 @@
 
 Package for making calls to multimodal prompts in Google Cloud easier to deal with.
 
+## DEPRECATED
+
+Please use https://github.com/xyproto/simplegemini instead. It has a pretty similar API, but with some improvements and additions.
+
 ## Example use
 
 ```go
